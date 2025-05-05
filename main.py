@@ -10,27 +10,17 @@ from env import *
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 EMAIL_ADDRESS = INTERNHASHA_EMAIL
-EMAIL_PASSWORD = INTERNHASHA_PW  # 앱 비밀번호 추천
+EMAIL_PASSWORD = INTERNHASHA_PW 
 
 # 첨부할 파일 경로
-ATTACHMENT_PATH = "test.txt"  # 예시 파일 (같은 폴더에 있다고 가정)
-
-# 개인화 메일 본문 생성
-def create_email_body(name):
-    return f"""\
-안녕하세요, {name}님.
-
-첨부된 파일을 확인해 주세요.
-감사합니다!
-
-- 드림
-"""
+ATTACHMENT_PATH = "인턴하샤 원페이저.pdf"  # 예시 파일 (같은 폴더에 있다고 가정)
 
 # CSV 읽고 메일 전송
 with open("contacts.csv", newline='', encoding='utf-8-sig') as csvfile:
     reader = csv.DictReader(csvfile)
+
+    # 각 수신자 별 메일 전송
     for row in reader:
-        print(row)
         name = row["name"]
         recipient_email = row["email"]
 
@@ -38,7 +28,7 @@ with open("contacts.csv", newline='', encoding='utf-8-sig') as csvfile:
         msg = MIMEMultipart()
         msg["From"] = EMAIL_ADDRESS
         msg["To"] = recipient_email
-        msg["Subject"] = f"{name}님께 드리는 개인화 메일 + 첨부파일"
+        msg["Subject"] = f"서울대 인턴 매칭 플랫폼 ‘인턴하샤’ 채용 공고 수집 문의"
 
         # 메일 본문
         body = create_email_body(name)
@@ -51,8 +41,18 @@ with open("contacts.csv", newline='', encoding='utf-8-sig') as csvfile:
                 part['Content-Disposition'] = f'attachment; filename="{os.path.basename(ATTACHMENT_PATH)}"'
                 msg.attach(part)
         else:
-            print(f"첨부파일을 찾을 수 없습니다: {ATTACHMENT_PATH}")
+            print(f"{recipient_email}에게 보낼 메일을 작성하는 중 첨부파일을 찾지 못했습니다: {ATTACHMENT_PATH}")
             continue
+
+        # 최종 확인
+        print(f"""
+아래와 같이 메일을 보내시겠습니까?(진행하려면 Enter)
+수신자: {msg['To']}({row['name']})
+제목: {msg['Subject']}
+첨부파일: {msg["Content-Disposition"]}
+내용:
+{msg["body"]}""")
+        input()
 
         # 메일 전송
         try:
