@@ -4,15 +4,16 @@ import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
+from env import *
 
 # SMTP 설정
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-EMAIL_ADDRESS = "your_email@gmail.com"
-EMAIL_PASSWORD = "your_app_password"  # 앱 비밀번호 추천
+EMAIL_ADDRESS = INTERNHASHA_EMAIL
+EMAIL_PASSWORD = INTERNHASHA_PW  # 앱 비밀번호 추천
 
 # 첨부할 파일 경로
-ATTACHMENT_PATH = "sample.pdf"  # 예시 파일 (같은 폴더에 있다고 가정)
+ATTACHMENT_PATH = "test.txt"  # 예시 파일 (같은 폴더에 있다고 가정)
 
 # 개인화 메일 본문 생성
 def create_email_body(name):
