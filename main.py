@@ -27,9 +27,10 @@ def create_email_body(name):
 """
 
 # CSV 읽고 메일 전송
-with open("contacts.csv", newline='', encoding='utf-8') as csvfile:
+with open("contacts.csv", newline='', encoding='utf-8-sig') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
+        print(row)
         name = row["name"]
         recipient_email = row["email"]
 
