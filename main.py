@@ -1,65 +1,68 @@
-import smtplib
 import csv
 import os
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
+from src.cdp_opener import open_browser, wait_until_cdp_ready
+from src.playwright_contextmanager import get_playwright
 from env import *
 
-# SMTP 설정
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-EMAIL_ADDRESS = INTERNHASHA_EMAIL
-EMAIL_PASSWORD = INTERNHASHA_PW 
 
-# 첨부할 파일 경로
-ATTACHMENT_PATH = "인턴하샤 원페이저.pdf"  # 예시 파일 (같은 폴더에 있다고 가정)
+def main():
+    # 매크로가 실행될 browser 실행
+    open_browser(
+        chrome_path = CHROME_PATH,
+        port=PORT
+    )
 
-# CSV 읽고 메일 전송
-with open("contacts.csv", newline='', encoding='utf-8-sig') as csvfile:
-    reader = csv.DictReader(csvfile)
+    # Chrome DevTools Protocol 정상 가동 여부 확인
+    try:
+        wait_until_cdp_ready(port=PORT, interval=3, max_iter=10)
+    except Exception as e:
+        print("CDP 최대 대기 횟수 초과")
+        raise e
+    print("CDP 정상 작동")
 
-    # 각 수신자 별 메일 전송
-    for row in reader:
-        name = row["name"]
-        recipient_email = row["email"]
+    # CDP에 playwright 연결
+    pw = get_playwright()
+    browser = pw.chromium.connect_over_cdp(f"http://localhost:{PORT}/", timeout=10000)
+    print("지금 열린 페이지에서 인턴하샤 메일함에 들어간 후 Enter를 누르세요.")
+    
+    input()
+    page = browser.contexts[0].pages[0]
 
-        # 메일 메시지 구성
-        msg = MIMEMultipart()
-        msg["From"] = EMAIL_ADDRESS
-        msg["To"] = recipient_email
-        msg["Subject"] = f"서울대 인턴 매칭 플랫폼 ‘인턴하샤’ 채용 공고 수집 문의"
+    # 매크로 실행
+    # CSV 읽기
+    with open("contacts.csv", newline='', encoding='utf-8-sig') as csvfile:
+        reader = csv.DictReader(csvfile)
 
-        # 메일 본문
-        body = create_email_body(name)
-        msg.attach(MIMEText(body, "plain"))
+        # 각 수신자별 메일 작성 매크로 실행행
+        for row in reader:
+            recipient_name = row["name"]
+            recipient_email = row["email"]
+            print(f"{recipient_name}({recipient_email})에 대한 이메일을 작성하려면 Enter 키를 누르세요.\n")
+            input()
 
-        # 파일 첨부
-        if os.path.exists(ATTACHMENT_PATH):
-            with open(ATTACHMENT_PATH, "rb") as file:
-                part = MIMEApplication(file.read(), Name=os.path.basename(ATTACHMENT_PATH))
-                part['Content-Disposition'] = f'attachment; filename="{os.path.basename(ATTACHMENT_PATH)}"'
-                msg.attach(part)
-        else:
-            print(f"{recipient_email}에게 보낼 메일을 작성하는 중 첨부파일을 찾지 못했습니다: {ATTACHMENT_PATH}")
-            continue
+            # 편지쓰기 창 열기
+            page.get_by_role("button", name="편지쓰기").click()
 
-        # 최종 확인
-        print(f"""
-아래와 같이 메일을 보내시겠습니까?(진행하려면 Enter)
-수신자: {msg['To']}({row['name']})
-제목: {msg['Subject']}
-첨부파일: {msg["Content-Disposition"]}
-내용:
-{msg["body"]}""")
-        input()
+            # 수신자 입력
+            page.get_by_role("combobox", name="수신자").click()
+            page.get_by_role("combobox", name="수신자").fill(recipient_email)
+            page.get_by_role("combobox", name="수신자").press("Enter")
 
-        # 메일 전송
-        try:
-            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-                server.starttls()
-                server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-                server.send_message(msg)
-                print(f"{name}님에게 메일 전송 완료")
-        except Exception as e:
-            print(f"{name}님에게 메일 전송 실패: {e}")
+            # 제목 입력
+            page.get_by_role("textbox", name="제목").click()
+            page.get_by_role("textbox", name="제목").fill()
+
+            # 본문 입력
+            # 본문 내용 생성
+            body = generate_body(recipient_name)
+            page.get_by_role("textbox", name="메일 본문").fill(body)
+
+            # 파일 첨부
+            with page.expect_file_chooser() as fc_info:
+                page.get_by_role("button", name="파일 첨부").click()
+            file_chooser = fc_info.value
+            file_chooser.set_files(os.path.abspath(INTERNHASHA_ONEPAGER_FILE_PATH))
+        
+        page.pause()
+
+main()
