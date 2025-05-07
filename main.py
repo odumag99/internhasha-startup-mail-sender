@@ -9,28 +9,31 @@ def main():
     # 매크로가 실행될 browser 실행
     open_browser(
         chrome_path = CHROME_PATH,
+        mail_url = MAIL_URL,
         port=PORT
     )
 
     # Chrome DevTools Protocol 정상 가동 여부 확인
     try:
+        print("CDP 서버 대기중")
         wait_until_cdp_ready(port=PORT, interval=3, max_iter=10)
     except Exception as e:
         print("CDP 최대 대기 횟수 초과")
         raise e
     print("CDP 정상 작동")
+    
 
     # CDP에 playwright 연결
     pw = get_playwright()
     browser = pw.chromium.connect_over_cdp(f"http://localhost:{PORT}/", timeout=10000)
-    print("지금 열린 페이지에서 인턴하샤 메일함에 들어간 후 Enter를 누르세요.")
+    print("아까 열린 페이지에서 인턴하샤 메일함에 들어간 후 Enter를 누르세요.")
     input()
     page = browser.contexts[0].pages[0]
     page.pause()
 
     # 매크로 실행
     # CSV 읽기
-    with open("contacts.csv", newline='', encoding='utf-8-sig') as csvfile:
+    with open("contacts.csv", newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
 
         # 각 수신자별 메일 작성 매크로 실행행
@@ -59,7 +62,9 @@ def main():
 
             # 파일 첨부
             with page.expect_file_chooser() as fc_info:
-                page.get_by_role("button", name="파일 첨부").click()
+                page.get_by_role("button", name="Attach files").click()
+                page.locator(".mt-ft-tooltip-row > .a1").click()
+                # page.locator("#tippy-32 div").filter(has_text="Attach files").nth(4).click()
             file_chooser = fc_info.value
             file_chooser.set_files(os.path.abspath(INTERNHASHA_ONEPAGER_FILE_PATH))
             # 파일 업로드 대기
@@ -73,12 +78,12 @@ def main():
 
             # 보내기 예약
             page.get_by_role("button", name="보내기 옵션 더보기").click()
-            page.get_by_text("보내기 예약", exact=True).click()
+            page.get_by_role("menuitem", name="보내기 예약").locator("div").click()
             page.get_by_text("날짜 및 시간 선택").click()
             page.get_by_role("textbox", name="날짜").click()
             page.get_by_role("textbox", name="날짜").fill(SENDING_DATE)
             page.get_by_role("textbox", name="시간").click()
             page.get_by_role("textbox", name="시간").fill(SENDING_TIME)
-            page.get_by_role("button", name="보내기 예약").click()
+            page.get_by_role("button", name="보내기 예약").nth(1)
 
 main()
