@@ -6,12 +6,20 @@ from playwright.sync_api import Playwright, sync_playwright
 def open_browser(
         chrome_path: str = "C:/Program Files/Google/Chrome/Application/chrome.exe",
         mail_url: str = "",
-        port: str = "7054"
+        port: str = "7054",
+        user_data_dir: str = ""
 ):
     """
     Browser 여는 함수
     """
-    subprocess.Popen(f'"{chrome_path}" "{mail_url}"  --remote-debugging-port={port}"')
+    cmd = f'"{chrome_path}"'
+    if mail_url:
+        cmd = cmd + f" {mail_url}"
+    if user_data_dir:
+        cmd = cmd + f" --user-data-dir={user_data_dir}"
+    cmd = cmd + f" --remote-debugging-port={port}"
+    print(cmd)
+    subprocess.Popen(cmd)
 
 def is_cdp_ready(port: int = 0
 ) -> bool :

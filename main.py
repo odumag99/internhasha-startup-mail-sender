@@ -10,7 +10,8 @@ def main():
     open_browser(
         chrome_path = CHROME_PATH,
         mail_url = MAIL_URL,
-        port=PORT
+        port=PORT,
+        user_data_dir="C:/Projects/internhasha-startup-mail-sender/chrome-user-data-dir"
     )
 
     # Chrome DevTools Protocol 정상 가동 여부 확인
