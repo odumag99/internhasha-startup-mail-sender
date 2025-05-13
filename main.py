@@ -41,8 +41,7 @@ def main():
         for row in reader:
             recipient_name = row["name"]
             recipient_email = row["email"]
-            print(f"{recipient_name}({recipient_email})에 대한 이메일을 작성하려면 Enter 키를 누르세요.")
-            input()
+            input(f"{recipient_name}({recipient_email})에 대한 이메일을 작성하려면 Enter 키를 누르세요.")
 
             # 편지쓰기 창 열기
             page.get_by_role("button", name="편지쓰기").click()
@@ -85,6 +84,9 @@ def main():
             page.get_by_role("textbox", name="날짜").fill(SENDING_DATE)
             page.get_by_role("textbox", name="시간").click()
             page.get_by_role("textbox", name="시간").fill(SENDING_TIME)
-            page.get_by_role("button", name="보내기 예약").nth(1)
+
+            # 최종 확인
+            input(f"이대로 보내시겠습니까?\n")
+            page.get_by_role("button", name="보내기 예약").nth(1).click()
 
 main()
